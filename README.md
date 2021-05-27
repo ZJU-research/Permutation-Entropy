@@ -1,2 +1,2 @@
 # Permutation-Entropy
-该仓库项目为用于时间序列异常检测的排列熵算法研究和使用，主要有排列熵的论文算法复现，和后来的学者提出改进的“经验排列熵”等相关学习研究。
+The warehouse project is the research and use of permutation entropy algorithm for time series anomaly detection, mainly the recurrence of permutation entropy algorithm, and later scholars proposed improved "experience permutation entropy" and other related learning research. 
