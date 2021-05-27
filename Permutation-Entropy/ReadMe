@@ -1,0 +1,1 @@
+Here we have reproduced the classic permutation entropy algorithm, and independently generated 10 different sets of data, data1, data2,...,data9, data10, and run main.py to directly start the permutation entropy algorithm to read these 10 sets of data calculations Permutation entropy result.
