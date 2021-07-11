@@ -19,7 +19,10 @@ var_x_list = zeros(Tau,d+1); % The value of a segment
 cnt2 = zeros(Tau); % the remove index of each Tau
 total_var_cnt = 0:Tau-1; %
 display_cnt = zeros(1,Tau);
-for iTau = 1 : Tau
+out_var_saver = zeros(1,Length);
+out_cnt = 1;
+for iTau = 1 : min(Tau,WS)
+    in_cnt = iTau;
     cnt = iTau;
     cnt3 = d1;
     op(1) = (x(dTau+iTau-Tau) >= x(dTau+iTau)); %caculate the first of ordinal patterns
@@ -35,6 +38,8 @@ for iTau = 1 : Tau
     now_mse = var(var_x_list(iTau,:)); % the various of the first ordinal patterns
     total_var_list(mod(total_var_cnt(iTau),WS)+1) = now_mse; % add it into content
     total_var_cnt(iTau) = total_var_cnt(iTau) + Tau;
+    out_var_saver(in_cnt) = opW(cnt) + 1;
+    in_cnt = in_cnt + Tau;
     opd(opW(cnt) + 1) = opd(opW(cnt) + 1) + now_mse; % add it into the odw
     display_cnt(iTau) = display_cnt(iTau) + 1;
     for j = dTau+Tau+iTau : Tau : WS+dTau
@@ -52,14 +57,23 @@ for iTau = 1 : Tau
         display_cnt(iTau) = display_cnt(iTau) + 1;
         cnt2(iTau) = cnt2(iTau) + 1;
         opW(cnt) = pTbl(opW(cnt-Tau)*d1 + posL);
+        out_var_saver(in_cnt) = opW(cnt) + 1;
+        in_cnt = in_cnt + Tau;
         opd(opW(cnt) + 1) = opd(opW(cnt) + 1) + now_mse;  
     end
     prevOP(iTau) = opW(cnt) ;
 end
 ordDistNorm = opd / sum(opd);
 ePE(WS+Tau*d ) = -nansum(ordDistNorm(1:nPat) .* log(ordDistNorm(1:nPat)));
+in_cnt = iTau;
 min_num = 99999999999999999999999;
 iTau = 1;
+for i=1:Length
+   if  out_var_saver(i) == 0
+        in_cnt = i;
+        break;
+   end
+end
 for i = 1:Tau % get the next caculate Tau
     if min_num > display_cnt(i)
         min_num = display_cnt(i);
@@ -68,29 +82,61 @@ for i = 1:Tau % get the next caculate Tau
 end
 iPat = 1;
 for t = WS+Tau*d+1:Length
+    %disp(opd)
     posL = 1;
     for j = t-dTau : Tau : t-Tau
         if (x(j) >= x(t))
             posL = posL + 1;
         end
     end
-    var_x_list(iTau,mod(cnt2(iTau),(d+1))+1) = x(t); % Add new elem to list
-    cnt2(iTau) = cnt2(iTau) + 1;
-    nNew = pTbl(prevOP(iTau)*d1+posL); % use table get next index
-    nOut = opW(iPat);
-    prevOP(iTau) = nNew ; % save the index into various
-    opW(iPat) = nNew ;
-    nNew = nNew + 1;
-    nOut = nOut + 1;
-    now_var = var(var_x_list(iTau,:)); %caculate various
-    old_var = total_var_list(mod(total_var_cnt(iTau),WS)+1);
-    total_var_list(mod(total_var_cnt(iTau),WS)+1) = now_var;
-    total_var_cnt(iTau) = total_var_cnt(iTau) + Tau;
-    opd(nNew) = opd(nNew) + now_var; % update opd
-    opd(nOut) = opd(nOut) - old_var;
-    ordDistNorm = opd / sum(opd);
-    ePE(t) = -nansum(ordDistNorm(1:nPat) .* log(ordDistNorm(1:nPat))); % caculate pe
-    iTau = iTau + 1;
+    if display_cnt(iTau) == 0
+        cnt = iTau;
+        cnt3 = d1;
+        op(1) = (x(dTau+iTau-Tau) >= x(dTau+iTau)); %caculate the first of ordinal patterns
+        var_x_list(iTau,cnt3) = x(dTau+iTau);
+        cnt3 = cnt3 - 1;
+        var_x_list(iTau,cnt3) = x(dTau+iTau-Tau); % put value into various content
+        for j = 2:d % caculate the rest number of the first ordinal patterns
+            op(j) = sum(x((d-j) * Tau + iTau) >= x((d1-j) * Tau + iTau : Tau : dTau+iTau));
+            cnt3 = cnt3 - 1 ;
+            var_x_list(iTau,cnt3) = x((d-j)*Tau+iTau);
+        end
+        opW(cnt) = sum(op .* ancNum); % the index of the first ordinal patterns
+        now_mse = var(var_x_list(iTau,:)); % the various of the first ordinal patterns
+        old_var = total_var_list(mod(total_var_cnt(iTau),WS)+1);
+        total_var_list(mod(total_var_cnt(iTau),WS)+1) = now_mse; % add it into content
+        total_var_cnt(iTau) = total_var_cnt(iTau) + Tau;
+        out_var_saver(in_cnt) = opW(cnt) + 1;
+        in_cnt = in_cnt + 1;
+        opd(opW(cnt) + 1) = opd(opW(cnt) + 1) + now_mse; % add it into the odw
+        display_cnt(iTau) = display_cnt(iTau) + 1;
+        nOut = out_var_saver(out_cnt);
+        out_cnt = out_cnt + 1;
+        opd(nOut) = opd(nOut) - old_var;
+        prevOP(iTau) = opW(iTau);
+        ordDistNorm = opd / sum(opd);
+        ePE(t) = -nansum(ordDistNorm(1:nPat) .* log(ordDistNorm(1:nPat)));
+    else
+        var_x_list(iTau,mod(cnt2(iTau),(d+1))+1) = x(t); % Add new elem to list
+        cnt2(iTau) = cnt2(iTau) + 1;
+        nNew = pTbl(prevOP(iTau)*d1+posL); % use table get next index
+        prevOP(iTau) = nNew ; % save the index into various
+        opW(iPat) = nNew ;
+        nNew = nNew + 1;
+        out_var_saver(in_cnt) = nNew;
+        in_cnt = in_cnt + 1;
+        nOut = out_var_saver(out_cnt);
+        out_cnt = out_cnt + 1;
+        now_var = var(var_x_list(iTau,:)); %caculate various
+        old_var = total_var_list(mod(total_var_cnt(iTau),WS)+1);
+        total_var_list(mod(total_var_cnt(iTau),WS)+1) = now_var;
+        total_var_cnt(iTau) = total_var_cnt(iTau) + Tau;
+        opd(nNew) = opd(nNew) + now_var; % update opd
+        opd(nOut) = opd(nOut) - old_var;
+        ordDistNorm = opd / sum(opd);
+        ePE(t) = -nansum(ordDistNorm(1:nPat) .* log(ordDistNorm(1:nPat))); % caculate pe
+    end
+   iTau = iTau + 1;
     iPat = iPat + 1;
     if (iTau > Tau) 
         iTau = 1; 
@@ -99,4 +145,4 @@ for t = WS+Tau*d+1:Length
         iPat = 1; 
     end
 end
-ePE = ePE (WS+Tau*d : end );
+ePE = abs(ePE (WS+Tau*d : end ));
